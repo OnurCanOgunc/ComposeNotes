@@ -27,7 +27,7 @@ import com.decode.composenotes.core.presentation.component.NoteList
 import com.decode.composenotes.core.presentation.helper_viewmodel.BaseUIEvent
 import com.decode.composenotes.core.presentation.helper_viewmodel.UIState
 import com.decode.composenotes.favorites.presentation.component.TopAppBar
-import com.decode.notesappcompose.core.presentation.navigation.Screens
+import com.decode.composenotes.core.presentation.navigation.Screens
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
