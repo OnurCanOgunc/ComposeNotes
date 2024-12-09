@@ -79,7 +79,7 @@ fun NoteScreen(
                     }
 
                     "Favorite" -> {
-                        onNavigate(Screens.Note.AddEditNoteScreen())
+                        onNavigate(Screens.Favorite.FavoriteScreen)
                     }
                 }
             }
@@ -107,7 +107,9 @@ fun NoteScreen(
                         noteViewModel.searchQuery.isNotEmpty() -> state.searchNotes
                         else -> state.notes
                     }
-                    //NOTES BOŞ OLUCA EMPTYLİSTCSREEN GELİYOR MU ------>
+                    if(notes.isEmpty()){
+                        EmptyAndErrorScreen()
+                    }
                     NoteList(
                         animatedVisibilityScope = animatedVisibilityScope,
                         sharedTransitionScope = sharedTransitionScope,

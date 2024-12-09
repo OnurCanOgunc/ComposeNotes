@@ -8,6 +8,6 @@ import javax.inject.Inject
 
 class NoteRepositoryImpl @Inject constructor(private val noteDao: NoteDao) : NoteRepository {
     override fun getNotes(): Flow<List<Note>> {
-        return NoteDao.getNotes()
+        return noteDao.getNotes()
     }
 }
