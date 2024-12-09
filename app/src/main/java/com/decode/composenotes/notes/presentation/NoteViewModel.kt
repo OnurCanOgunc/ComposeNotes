@@ -5,6 +5,7 @@ import com.decode.composenotes.core.domain.use_case.NoteUseCase
 import com.decode.composenotes.core.presentation.helper_viewmodel.BasedUIEvent
 import com.decode.composenotes.core.presentation.helper_viewmodel.NoteHelperViewModel
 import com.decode.composenotes.core.presentation.helper_viewmodel.UIState
+import com.decode.composenotes.notes.data.PreferencesRepository
 import com.decode.composenotes.notes.domain.use_case.GetNotes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -13,10 +14,24 @@ import kotlin.text.isEmpty
 
 @HiltViewModel
 class NoteViewModel @Inject constructor(
-    private val noteUseCase: NoteUseCase,
+    noteUseCase: NoteUseCase,
     private val getNotes: GetNotes,
+    private val preferencesRepository: PreferencesRepository,
 ) : NoteHelperViewModel<BasedUIEvent>(noteUseCase) {
 
+
+    override fun onEvent(event: BasedUIEvent) {
+        when (event) {
+            is NotesUIEvent.DarkModeActive -> updateIsDarkModeActive(event.isDarkMode)
+            else -> super.onEvent(event)
+        }
+    }
+
+    fun updateIsDarkModeActive(isDarkMode: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.updateIsDarkMode(isDarkMode)
+        }
+    }
 
     override fun loadData() {
         viewModelScope.launch {
@@ -33,6 +48,5 @@ class NoteViewModel @Inject constructor(
             }
         }
     }
-
 
 }

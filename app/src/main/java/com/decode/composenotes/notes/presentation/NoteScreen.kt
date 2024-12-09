@@ -29,6 +29,7 @@ import com.decode.composenotes.core.presentation.helper_viewmodel.UIState
 import com.decode.composenotes.notes.presentation.component.CustomExpandableFAB
 import com.decode.composenotes.notes.presentation.component.NoteTopBar
 import com.decode.composenotes.core.presentation.component.NoteList
+import com.decode.composenotes.core.presentation.navigation.Screens
 import kotlin.text.isNotEmpty
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -39,7 +40,7 @@ fun NoteScreen(
     sharedTransitionScope: SharedTransitionScope,
     noteViewModel: NoteViewModel = hiltViewModel(),
     isDarkMode: Boolean,
-    onNavigate: () -> Unit,
+    onNavigate: (Screens) -> Unit,
 ) {
     val noteState by noteViewModel.uiState.collectAsStateWithLifecycle()
     val searchState by noteViewModel.searchState.collectAsStateWithLifecycle()
@@ -59,18 +60,14 @@ fun NoteScreen(
         topBar = {
             NoteTopBar(
                 onSearch = {
-                    noteViewModel.onEvent(
-                        BaseUIEvent.SearchQuery(
-                            it
-                        )
-                    )
+                    noteViewModel.onEvent(BaseUIEvent.SearchQuery(it))
                 },
                 onClearSearch = {
                     noteViewModel.onEvent(BaseUIEvent.ClearSearch)
                 },
                 isDarkMode = isDarkMode,
                 toggleClick = {
-                    //Dark Mode Toggle
+                    noteViewModel.onEvent(NotesUIEvent.DarkModeActive(it))
                 }
             )
         },
@@ -78,11 +75,11 @@ fun NoteScreen(
             CustomExpandableFAB() {
                 when (it.text) {
                     "Create" -> {
-                        //onNavigate()
+                        onNavigate(Screens.Note.AddEditNoteScreen())
                     }
 
                     "Favorite" -> {
-                        //onNavigate()
+                        onNavigate(Screens.Note.AddEditNoteScreen())
                     }
                 }
             }
@@ -116,7 +113,7 @@ fun NoteScreen(
                         sharedTransitionScope = sharedTransitionScope,
                         noteList = notes,
                         onEditNoteClick = {
-                            //onNavigate()
+                            onNavigate(Screens.Note.AddEditNoteScreen(it))
                         },
                         onDeleteClick = { note ->
                            noteViewModel.onEvent(
