@@ -1,4 +1,4 @@
-package com.decode.notesappcompose.core.data.data_source
+package com.decode.composenotes.core.data.data_source
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
