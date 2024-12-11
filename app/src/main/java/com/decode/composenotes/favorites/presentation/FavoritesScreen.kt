@@ -16,12 +16,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.decode.composenotes.core.presentation.EmptyAndErrorScreen
 import com.decode.composenotes.core.presentation.component.NoteList
 import com.decode.composenotes.core.presentation.helper_viewmodel.BaseUIEvent
@@ -33,14 +30,15 @@ import com.decode.composenotes.core.presentation.navigation.Screens
 @Composable
 fun FavoritesScreen(
     modifier: Modifier = Modifier,
-    favoriteViewModel: FavoriteViewModel = hiltViewModel(),
+    favoriteState: UIState,
+    searchState: UIState,
+    onUIEvent: (BaseUIEvent) -> Unit,
+    searchQuery: String,
     animatedVisibilityScope: AnimatedVisibilityScope,
     sharedTransitionScope: SharedTransitionScope,
     onNavigate: (Screens) -> Unit,
     navigateUp: () -> Unit
 ) {
-    val favoriteState by favoriteViewModel.uiState.collectAsStateWithLifecycle()
-    val searchState by favoriteViewModel.searchState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     val interactionSource = remember { MutableInteractionSource() }
 
@@ -55,8 +53,8 @@ fun FavoritesScreen(
         topBar = {
             TopAppBar(
                 navigateUp = navigateUp,
-                onSearch = { favoriteViewModel.onEvent(BaseUIEvent.SearchQuery(it)) },
-                onClearSearch = { favoriteViewModel.onEvent(BaseUIEvent.ClearSearch) }
+                onSearch = { onUIEvent(BaseUIEvent.SearchQuery(it)) },
+                onClearSearch = { onUIEvent(BaseUIEvent.ClearSearch) }
             )
         }
     ) { innerPadding ->
@@ -64,7 +62,7 @@ fun FavoritesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            targetState = if (favoriteViewModel.searchQuery.isNotEmpty()) searchState else favoriteState,
+            targetState = if (searchQuery.isNotEmpty()) searchState else favoriteState,
             label = "",
             transitionSpec = {
                 fadeIn(animationSpec = tween(300, easing = LinearEasing)) togetherWith fadeOut(
@@ -72,33 +70,44 @@ fun FavoritesScreen(
                 )
             }
         ) { state ->
-            when (state) {
-                is UIState.Error -> EmptyAndErrorScreen(message = state.message)
-                is UIState.Loading -> EmptyAndErrorScreen()
-                is UIState.Content -> {
-                    val notes = if (favoriteViewModel.searchQuery.isNotEmpty()) {
-                        state.searchNotes
-                    } else {
-                        state.favorites
-                    }
-                    if (notes.isEmpty()) {
-                        EmptyAndErrorScreen(message = "Create your first favorite note")
-                    }
-                    NoteList(
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        sharedTransitionScope = sharedTransitionScope,
-                        noteList = notes,
-                        onEditNoteClick = { onNavigate(Screens.Note.AddEditNoteScreen(it)) },
-                        onDeleteClick = { note -> favoriteViewModel.onEvent(BaseUIEvent.DeleteItem(note)) },
-                        onFavoriteClick = { isFavorite ->
-                            favoriteViewModel.onEvent(
-                                BaseUIEvent.ToggleFavorite(
-                                    isFavorite
-                                )
-                            )
-                        }
-                    )
-                }
+            RenderFavoritesState(
+                state = state,
+                searchQuery = searchQuery,
+                animatedVisibilityScope = animatedVisibilityScope,
+                sharedTransitionScope = sharedTransitionScope,
+                onNavigate = onNavigate,
+                onEvent = onUIEvent
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+fun RenderFavoritesState(
+    state: UIState,
+    searchQuery: String,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    sharedTransitionScope: SharedTransitionScope,
+    onNavigate: (Screens) -> Unit,
+    onEvent: (BaseUIEvent) -> Unit
+) {
+    when (state) {
+        is UIState.Error -> EmptyAndErrorScreen(message = state.message)
+        is UIState.Loading -> EmptyAndErrorScreen()
+        is UIState.Content -> {
+            val notes = if (searchQuery.isNotEmpty()) state.searchNotes else state.favorites
+            if (notes.isEmpty()) {
+                EmptyAndErrorScreen(message = "Create your first favorite note")
+            } else {
+                NoteList(
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    sharedTransitionScope = sharedTransitionScope,
+                    noteList = notes,
+                    onEditNoteClick = { onNavigate(Screens.Note.AddEditNoteScreen(it)) },
+                    onDeleteClick = { note -> onEvent(BaseUIEvent.DeleteItem(note)) },
+                    onFavoriteClick = { isFavorite -> onEvent(BaseUIEvent.ToggleFavorite(isFavorite)) }
+                )
             }
         }
     }
