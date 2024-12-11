@@ -17,18 +17,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.decode.composenotes.core.presentation.EmptyAndErrorScreen
 import com.decode.composenotes.core.presentation.helper_viewmodel.BaseUIEvent
 import com.decode.composenotes.core.presentation.helper_viewmodel.UIState
 import com.decode.composenotes.notes.presentation.component.CustomExpandableFAB
 import com.decode.composenotes.notes.presentation.component.NoteTopBar
 import com.decode.composenotes.core.presentation.component.NoteList
+import com.decode.composenotes.core.presentation.helper_viewmodel.BasedUIEvent
 import com.decode.composenotes.core.presentation.navigation.Screens
 import kotlin.text.isNotEmpty
 
@@ -38,12 +36,13 @@ fun NoteScreen(
     modifier: Modifier = Modifier,
     animatedVisibilityScope: AnimatedVisibilityScope,
     sharedTransitionScope: SharedTransitionScope,
-    noteViewModel: NoteViewModel = hiltViewModel(),
+    noteState: UIState,
+    searchState: UIState,
+    onUIEvent: (BasedUIEvent) -> Unit,
+    searchQuery: String,
     isDarkMode: Boolean,
     onNavigate: (Screens) -> Unit,
 ) {
-    val noteState by noteViewModel.uiState.collectAsStateWithLifecycle()
-    val searchState by noteViewModel.searchState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     val interactionSource = remember { MutableInteractionSource() }
 
@@ -60,14 +59,14 @@ fun NoteScreen(
         topBar = {
             NoteTopBar(
                 onSearch = {
-                    noteViewModel.onEvent(BaseUIEvent.SearchQuery(it))
+                    onUIEvent(BaseUIEvent.SearchQuery(it))
                 },
                 onClearSearch = {
-                    noteViewModel.onEvent(BaseUIEvent.ClearSearch)
+                    onUIEvent(BaseUIEvent.ClearSearch)
                 },
                 isDarkMode = isDarkMode,
                 toggleClick = {
-                    noteViewModel.onEvent(NotesUIEvent.DarkModeActive(it))
+                    onUIEvent(NotesUIEvent.DarkModeActive(it))
                 }
             )
         },
@@ -87,7 +86,7 @@ fun NoteScreen(
     ) { innerPadding ->
         AnimatedContent(
             modifier = Modifier.fillMaxSize().padding(innerPadding),
-            targetState = if (noteViewModel.searchQuery.isNotEmpty()) searchState else noteState,
+            targetState = if (searchQuery.isNotEmpty()) searchState else noteState,
             label = "",
             contentKey = {
                 when (it) {
@@ -101,50 +100,51 @@ fun NoteScreen(
                 )
             }
         ) { state ->
-            when (state) {
-                is UIState.Content -> {
-                    val notes = when {
-                        noteViewModel.searchQuery.isNotEmpty() -> state.searchNotes
-                        else -> state.notes
-                    }
-                    if(notes.isEmpty()){
-                        EmptyAndErrorScreen()
-                    }
-                    NoteList(
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        sharedTransitionScope = sharedTransitionScope,
-                        noteList = notes,
-                        onEditNoteClick = {
-                            onNavigate(Screens.Note.AddEditNoteScreen(it))
-                        },
-                        onDeleteClick = { note ->
-                           noteViewModel.onEvent(
-                                BaseUIEvent.DeleteItem(
-                                    note
-                                )
-                            )
-                        },
-                        onFavoriteClick = { note ->
-                            noteViewModel.onEvent(
-                                BaseUIEvent.ToggleFavorite(
-                                    note
-                                )
-                            )
-                        }
-                    )
-
-                }
-
-                is UIState.Error -> {
-                    EmptyAndErrorScreen(message = state.message)
-                }
-
-                UIState.Loading -> {
-                    EmptyAndErrorScreen(message = "Loading")
-                }
-            }
+            RenderState(
+                state = state,
+                onNavigate = onNavigate,
+                onUIEvent = onUIEvent,
+                animatedVisibilityScope = animatedVisibilityScope,
+                sharedTransitionScope = sharedTransitionScope
+            )
         }
 
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+fun RenderState(
+    state: UIState,
+    onNavigate: (Screens) -> Unit,
+    onUIEvent: (BasedUIEvent) -> Unit,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    sharedTransitionScope: SharedTransitionScope,
+) {
+    when (state) {
+        is UIState.Content -> {
+            val notes = if (state.searchNotes.isNotEmpty()) state.searchNotes else state.notes
+            if (notes.isEmpty()) {
+                EmptyAndErrorScreen()
+            } else {
+                NoteList(
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    sharedTransitionScope = sharedTransitionScope,
+                    noteList = notes,
+                    onEditNoteClick = {
+                        onNavigate(Screens.Note.AddEditNoteScreen(it))
+                    },
+                    onDeleteClick = { note ->
+                        onUIEvent(BaseUIEvent.DeleteItem(note))
+                    },
+                    onFavoriteClick = { note ->
+                        onUIEvent(BaseUIEvent.ToggleFavorite(note))
+                    }
+                )
+            }
+        }
+
+        is UIState.Error -> EmptyAndErrorScreen(message = state.message)
+        UIState.Loading -> EmptyAndErrorScreen()
+    }
+}
