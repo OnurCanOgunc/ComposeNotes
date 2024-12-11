@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.decode.composenotes.add_edit_note.presentation.component.CustomTextField
+import com.decode.composenotes.core.presentation.util.collectWithLifecyle
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
@@ -43,18 +44,18 @@ fun AddEditNoteScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(true) {
-        if (noteId != -1){
-            viewModel.getNote(noteId)
-        }
-        viewModel.eventFlow.collect { event ->
-            when (event) {
-                is UiEvent.ShowSnackBar -> {
-                    snackbarHostState.showSnackbar(event.message)
-                }
-                UiEvent.SaveNote -> {
-                    navigateUp()
-                }
+    LaunchedEffect(key1 = true) {
+        viewModel.getNote(noteId)
+    }
+
+    viewModel.eventFlow.collectWithLifecyle {
+        when (it) {
+            is UiEvent.ShowSnackBar -> {
+                snackbarHostState.showSnackbar(it.message)
+            }
+
+            UiEvent.SaveNote -> {
+                navigateUp()
             }
         }
     }
