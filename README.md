@@ -1,5 +1,5 @@
 
-# Not application
+# Note application
 
 A beautifully designed note-taking application built with Jetpack Compose, offering a seamless and intuitive user experience.  
 
