@@ -35,7 +35,6 @@ This project utilizes the following technologies:
 
 **Architecture:**
 
-*   **MVVM (Model-View-ViewModel):** Separates UI (View) from business logic (ViewModel), improving testability, maintainability, and code organization.Chosen for its widely recognized benefits in structuring Android apps.
 *   **Clean Architecture:**  Organizes the app into layers (Presentation, Domain, Data) to enforce separation of concerns and improve long-term maintainability and scalability. Chosen for its robust structure and improved code organization.
 
 **Concurrency:**
